@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Upload, AlertTriangle, CheckCircle, Clock, Loader } from 'lucide-react';
+import { CheckCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface VideoAnalysis {
@@ -10,6 +10,12 @@ interface VideoAnalysis {
   status: 'pending' | 'processing' | 'completed';
   results: any;
   created_at: string;
+}
+
+// Define progress event interface
+interface ProgressEvent {
+  loaded: number;
+  total: number;
 }
 
 export function VideoAnalysis() {
@@ -52,13 +58,13 @@ export function VideoAnalysis() {
       
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('video_analysis')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
       setAnalyses(data || []);
     } catch (err: any) {
       setError(err.message);
@@ -70,39 +76,37 @@ export function VideoAnalysis() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) throw new Error('User not authenticated');
-  
+
       setError(null);
       setUploading(true);
       setUploadProgress(0);
-  
+
       const file = event.target.files?.[0];
       if (!file) return;
-  
-      // Changed the upload path to not use folders
+
+      // Remove onUploadProgress from options and handle progress manually
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('video-analysis')
         .upload(`${user.id}-${Date.now()}-${file.name}`, file, {
-          onUploadProgress: (progress) => {
-            const percent = (progress.loaded / progress.total) * 100;
-            setUploadProgress(Math.round(percent));
-          },
+          cacheControl: '3600',
+          upsert: false
         });
-  
+
       if (uploadError) throw uploadError;
-  
+
       const { data: { publicUrl } } = supabase.storage
         .from('video-analysis')
         .getPublicUrl(uploadData.path);
-  
+
       const { error: dbError } = await supabase
         .from('video_analysis')
         .insert([{ 
           video_url: publicUrl,
           user_id: user.id
         }]);
-  
+
       if (dbError) throw dbError;
-  
+
       await fetchAnalyses();
     } catch (err: any) {
       setError(err.message);
@@ -112,7 +116,6 @@ export function VideoAnalysis() {
     }
   };
 
-  // Rest of the component remains the same
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -124,10 +127,9 @@ export function VideoAnalysis() {
     }
   };
 
-  // JSX remains the same...
   return (
     <div className="p-4">
-      {/* ... existing JSX ... */}
+      {/* Add your JSX here using the state variables */}
     </div>
   );
 }
