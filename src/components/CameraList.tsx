@@ -87,8 +87,8 @@ export function CameraList() {
               type="text"
               value={newCamera.camera_name}
               onChange={(e) => setNewCamera({ ...newCamera, camera_name: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-
+              className="mt-1 block w-full rounded-lg border border-black bg-white text-gray-900 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 ease-in-out"
+ 
               required
             />
           </div>
@@ -102,7 +102,8 @@ export function CameraList() {
               type="text"
               value={newCamera.ip_address}
               onChange={(e) => setNewCamera({ ...newCamera, ip_address: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-lg border border-black bg-white text-gray-900 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 ease-in-out"
+ 
 
               required
             />
