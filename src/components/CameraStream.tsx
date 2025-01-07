@@ -9,7 +9,7 @@ interface CameraStreamProps {
 export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState(false);
-  const [streamUrl, setStreamUrl] = useState(`http://${ipAddress}/video`);
+  const [streamUrl, setStreamUrl] = useState(`http://${ipAddress}/video.mjpg`);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -25,7 +25,7 @@ export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
 
   useEffect(() => {
     // Update the stream URL if the IP address changes
-    setStreamUrl(`http://${ipAddress}/video`);
+    setStreamUrl(`http://${ipAddress}/video.mjpg`);
   }, [ipAddress]);
 
   return (
