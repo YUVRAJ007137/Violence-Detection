@@ -24,13 +24,12 @@ export function CameraList() {
   const fetchCameras = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) throw new Error('User not authenticated');
   
       const { data, error } = await supabase
         .from('cameras')
         .select('*')
-        .eq('user_id', user.id)  // Add this line to filter by user_id
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
   
       if (error) throw error;
@@ -46,7 +45,6 @@ export function CameraList() {
     e.preventDefault();
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) throw new Error('User not authenticated');
 
       const { error } = await supabase
@@ -81,10 +79,10 @@ export function CameraList() {
   if (loading) return <div className="text-center p-4">Loading cameras...</div>;
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Cameras</h2>
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold">Cameras</h2>
 
-            <form onSubmit={addCamera} className="mb-6 bg-gray-50 p-4 rounded-lg shadow">
+      <form onSubmit={addCamera} className="bg-gray-50 p-4 rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Camera Name</label>
@@ -92,7 +90,7 @@ export function CameraList() {
               type="text"
               value={newCamera.camera_name}
               onChange={(e) => setNewCamera({ ...newCamera, camera_name: e.target.value })}
-              className="mt-1 block w-full rounded-md border-black bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               required
             />
           </div>
@@ -102,14 +100,14 @@ export function CameraList() {
               type="text"
               value={newCamera.ip_address}
               onChange={(e) => setNewCamera({ ...newCamera, ip_address: e.target.value })}
-              className="mt-1 block w-full rounded-md border-black bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               required
             />
           </div>
         </div>
         <button
           type="submit"
-          className="mt-4 flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="mt-4 w-full md:w-auto flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Camera
@@ -128,6 +126,11 @@ export function CameraList() {
             onDelete={deleteCamera}
           />
         ))}
+        {cameras.length === 0 && (
+          <div className="col-span-full text-center text-gray-500 py-8">
+            No cameras added yet
+          </div>
+        )}
       </div>
     </div>
   );

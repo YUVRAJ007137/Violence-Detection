@@ -26,7 +26,6 @@ export function CameraDetails() {
   useEffect(() => {
     fetchCameraAndNotifications();
 
-    // Subscribe to new notifications
     const channel = supabase
       .channel(`camera-${id}`)
       .on('postgres_changes', {
@@ -46,25 +45,16 @@ export function CameraDetails() {
 
   const fetchCameraAndNotifications = async () => {
     try {
-      // Fetch camera details
-      const { data: cameraData, error: cameraError } = await supabase
-        .from('cameras')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const [cameraResult, notificationsResult] = await Promise.all([
+        supabase.from('cameras').select('*').eq('id', id).single(),
+        supabase.from('notifications').select('*').eq('camera_id', id).order('timestamp', { ascending: false })
+      ]);
 
-      if (cameraError) throw cameraError;
-      setCamera(cameraData);
+      if (cameraResult.error) throw cameraResult.error;
+      if (notificationsResult.error) throw notificationsResult.error;
 
-      // Fetch notifications
-      const { data: notificationsData, error: notificationsError } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('camera_id', id)
-        .order('timestamp', { ascending: false });
-
-      if (notificationsError) throw notificationsError;
-      setNotifications(notificationsData);
+      setCamera(cameraResult.data);
+      setNotifications(notificationsResult.data || []);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -77,8 +67,8 @@ export function CameraDetails() {
   if (!camera) return <div className="text-center p-4">Camera not found</div>;
 
   return (
-    <div className="p-4 max-w-7xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">{camera.camera_name}</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">{camera.camera_name}</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-4 rounded-lg shadow">
