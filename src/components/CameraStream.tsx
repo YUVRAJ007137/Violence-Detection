@@ -9,24 +9,13 @@ interface CameraStreamProps {
 export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState(false);
-  const [streamUrl, setStreamUrl] = useState(`http://${ipAddress}`);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handleImageError = () => {
-    setError(true);
-  };
-
-  const handleImageLoad = () => {
-    setError(false);
-  };
-
-  useEffect(() => {
-    // Update the stream URL if the IP address changes
-    setStreamUrl(`http://${ipAddress}`);
-  }, [ipAddress]);
+  // Use a reliable CORS proxy
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`http://${ipAddress}`)}`;
 
   return (
     <div
@@ -40,18 +29,25 @@ export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
             <AlertCircle className="w-8 h-8 mx-auto mb-2" />
             <p>Unable to connect to camera</p>
             <p className="text-sm mt-1">{ipAddress}</p>
+            <p className="text-xs mt-2">Please check:</p>
+            <ul className="text-xs mt-1 space-y-1">
+              <li>Camera is powered on</li>
+              <li>Camera is connected to network</li>
+              <li>IP address is correct</li>
+              <li>Port 8080 is open and accessible</li>
+            </ul>
           </div>
         </div>
       ) : (
         <>
           <img
-            src={streamUrl}
+            src={proxyUrl}
             alt={`Stream from ${cameraName}`}
             className={`${
-              isFullscreen ? 'w-full h-full' : 'w-full h-full rounded'
+              isFullscreen ? 'w-full h-full object-contain' : 'w-full h-full rounded object-cover'
             }`}
-            onError={handleImageError}
-            onLoad={handleImageLoad}
+            onError={() => setError(true)}
+            onLoad={() => setError(false)}
           />
           <button
             onClick={toggleFullscreen}
