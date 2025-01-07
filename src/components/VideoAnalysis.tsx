@@ -54,10 +54,11 @@ export function VideoAnalysis() {
       setError(null);
       setUploading(true);
       setUploadProgress(0);
-
+  
       const file = event.target.files?.[0];
       if (!file) return;
-
+  
+      // Step 1: Upload the video to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('video-analysis')
         .upload(`videos/${Date.now()}-${file.name}`, file, {
@@ -66,19 +67,45 @@ export function VideoAnalysis() {
             setUploadProgress(Math.round(percent));
           },
         });
-
+  
       if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
+  
+      // Step 2: Get the public URL of the uploaded video
+      const { data: publicUrlData, error: publicUrlError } = supabase.storage
         .from('video-analysis')
         .getPublicUrl(uploadData.path);
-
+  
+      if (publicUrlError) throw publicUrlError;
+  
+      const videoUrl = publicUrlData.publicUrl;
+  
+      // Step 3: Fetch the authenticated user's ID
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('Error fetching user:', userError);
+        throw userError;
+      }
+      
+      const userId = userData?.user?.id;
+      console.log('Authenticated user ID:', userId);
+      
+      if (!userId) throw new Error('Failed to retrieve authenticated user ID');
+      
+  
+      // Step 4: Insert the video record into the database
       const { error: dbError } = await supabase
         .from('video_analysis')
-        .insert([{ video_url: publicUrl }]);
-
+        .insert([
+          {
+            user_id: userId,
+            video_url: videoUrl,
+            status: 'pending', // Default status
+          },
+        ]);
+  
       if (dbError) throw dbError;
-
+  
+      // Step 5: Refresh analyses to update UI
       await fetchAnalyses();
     } catch (err: any) {
       setError(err.message);
@@ -87,6 +114,8 @@ export function VideoAnalysis() {
       setUploadProgress(0);
     }
   };
+  
+  
 
   const getStatusIcon = (status: string) => {
     switch (status) {
