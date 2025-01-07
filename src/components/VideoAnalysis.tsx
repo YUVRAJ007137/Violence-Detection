@@ -70,38 +70,39 @@ export function VideoAnalysis() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) throw new Error('User not authenticated');
-
+  
       setError(null);
       setUploading(true);
       setUploadProgress(0);
-
+  
       const file = event.target.files?.[0];
       if (!file) return;
-
+  
+      // Changed the upload path to not use folders
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('video-analysis')
-        .upload(`videos/${user.id}/${Date.now()}-${file.name}`, file, {
+        .upload(`${user.id}-${Date.now()}-${file.name}`, file, {
           onUploadProgress: (progress) => {
             const percent = (progress.loaded / progress.total) * 100;
             setUploadProgress(Math.round(percent));
           },
         });
-
+  
       if (uploadError) throw uploadError;
-
+  
       const { data: { publicUrl } } = supabase.storage
         .from('video-analysis')
         .getPublicUrl(uploadData.path);
-
+  
       const { error: dbError } = await supabase
         .from('video_analysis')
         .insert([{ 
           video_url: publicUrl,
           user_id: user.id
         }]);
-
+  
       if (dbError) throw dbError;
-
+  
       await fetchAnalyses();
     } catch (err: any) {
       setError(err.message);
