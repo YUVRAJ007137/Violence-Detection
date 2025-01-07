@@ -91,6 +91,17 @@ export function CameraList() {
               required
             />
           </div>
+
+        <div>
+        <input
+  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:outline-black focus:ring-2 focus:ring-offset-2 focus:ring-gradient-to-r focus:ring-blue-500 focus:ring-indigo-500"
+/>
+
+        </div>
+
+
+
+
           <div>
             <label className="block text-sm font-medium text-gray-700">IP Address</label>
             <input
