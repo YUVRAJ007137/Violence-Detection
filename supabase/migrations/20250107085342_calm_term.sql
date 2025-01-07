@@ -23,16 +23,3 @@ CREATE TABLE IF NOT EXISTS video_analysis (
   created_at timestamptz DEFAULT now()
 );
 
-ALTER TABLE video_analysis ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view their own video analysis"
-  ON video_analysis
-  FOR SELECT
-  TO authenticated
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own video analysis"
-  ON video_analysis
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (auth.uid() = user_id);
