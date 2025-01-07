@@ -79,7 +79,7 @@ export function CameraList() {
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Cameras</h2>
 
-      <form onSubmit={addCamera} className="mb-6 bg-white p-4 rounded-lg shadow">
+            <form onSubmit={addCamera} className="mb-6 bg-gray-50 p-4 rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Camera Name</label>
@@ -87,7 +87,7 @@ export function CameraList() {
               type="text"
               value={newCamera.camera_name}
               onChange={(e) => setNewCamera({ ...newCamera, camera_name: e.target.value })}
-              className="mt-1 block w-full rounded-md border-black shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-black bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
               required
             />
           </div>
@@ -97,7 +97,7 @@ export function CameraList() {
               type="text"
               value={newCamera.ip_address}
               onChange={(e) => setNewCamera({ ...newCamera, ip_address: e.target.value })}
-              className="mt-1 block w-full rounded-md border-black shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-black bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
               required
             />
           </div>
