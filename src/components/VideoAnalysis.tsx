@@ -80,17 +80,18 @@ export function VideoAnalysis() {
       const videoUrl = publicUrlData.publicUrl;
   
       // Step 3: Fetch the authenticated user's ID
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error('Error fetching user:', userError);
-        throw userError;
+      const { data: userSession, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('Error fetching session:', sessionError);
+        throw sessionError;
       }
-      
-      const userId = userData?.user?.id;
+  
+      const userId = userSession?.session?.user?.id;
       console.log('Authenticated user ID:', userId);
-      
-      if (!userId) throw new Error('Failed to retrieve authenticated user ID');
-      
+  
+      if (!userId) {
+        throw new Error('User is not authenticated or user ID could not be retrieved.');
+      }
   
       // Step 4: Insert the video record into the database
       const { error: dbError } = await supabase
@@ -108,12 +109,14 @@ export function VideoAnalysis() {
       // Step 5: Refresh analyses to update UI
       await fetchAnalyses();
     } catch (err: any) {
+      console.error('Error during video upload:', err);
       setError(err.message);
     } finally {
       setUploading(false);
       setUploadProgress(0);
     }
   };
+  
   
   
 
