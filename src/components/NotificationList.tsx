@@ -21,26 +21,39 @@ export function NotificationList() {
 
   useEffect(() => {
     fetchNotifications();
-    
-    // Subscribe to new notifications
-    const channel = supabase
-      .channel('notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications'
-      }, payload => {
-        setNotifications(current => [payload.new as Notification, ...current]);
-      })
-      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
+    // Subscribe to new notifications for the current user
+    const subscribeToNotifications = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
+      const channel = supabase
+        .channel('notifications')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`  // Only subscribe to current user's notifications
+        }, payload => {
+          setNotifications(current => [payload.new as Notification, ...current]);
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     };
+
+    subscribeToNotifications();
   }, []);
 
   const fetchNotifications = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error('User not authenticated');
+
       const { data, error } = await supabase
         .from('notifications')
         .select(`
@@ -49,6 +62,7 @@ export function NotificationList() {
             camera_name
           )
         `)
+        .eq('user_id', user.id)  // Filter notifications by user_id
         .order('timestamp', { ascending: false });
 
       if (error) throw error;
