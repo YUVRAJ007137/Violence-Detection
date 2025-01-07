@@ -82,7 +82,7 @@ export function CameraList() {
       <form onSubmit={addCamera} className="mb-6 bg-white p-4 rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Camera Name a</label>
+            <label className="block text-sm font-medium text-gray-700">Camera Name aa</label>
             <input
               type="text"
               value={newCamera.camera_name}
