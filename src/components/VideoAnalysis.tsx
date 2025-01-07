@@ -68,7 +68,7 @@ export function VideoAnalysis() {
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+      console.log('User ID:', user.id);
       if (!user) throw new Error('User not authenticated');
 
       setError(null);
