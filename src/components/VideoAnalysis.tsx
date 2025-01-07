@@ -126,7 +126,110 @@ export function VideoAnalysis() {
   // JSX remains the same...
   return (
     <div className="p-4">
-      {/* ... existing JSX ... */}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold mb-4">Video Analysis</h2>
+        
+        <div className="bg-white p-4 rounded-lg shadow">
+          <label className="block">
+            <span className="sr-only">Choose video file</span>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+              <div className="space-y-1 text-center">
+                {uploading ? (
+                  <div className="space-y-2">
+                    <Loader className="mx-auto h-12 w-12 text-blue-500 animate-spin" />
+                    <div className="relative pt-1">
+                      <div className="flex mb-2 items-center justify-between">
+                        <div>
+                          <span className="text-xs font-semibold inline-block text-blue-600">
+                            Uploading...
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-semibold inline-block text-blue-600">
+                            {uploadProgress}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
+                        <div
+                          style={{ width: `${uploadProgress}%` }}
+                          className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="flex text-sm text-gray-600">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                        <span>Upload a video</span>
+                        <input
+                          type="file"
+                          className="sr-only"
+                          accept="video/*"
+                          onChange={handleUpload}
+                          disabled={uploading}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500">MP4, AVI up to 100MB</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </label>
+        </div>
+
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 rounded-md">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+              <p className="ml-3 text-sm text-red-500">{error}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        {analyses.map((analysis) => (
+          <div key={analysis.id} className="bg-white p-4 rounded-lg shadow">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center space-x-2">
+                  {getStatusIcon(analysis.status)}
+                  <span className="font-medium capitalize">{analysis.status}</span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Uploaded {format(new Date(analysis.created_at), 'PPp')}
+                </p>
+              </div>
+              
+              {analysis.status === 'completed' && analysis.results && (
+                <div className="text-right">
+                  <p className="text-sm font-medium">
+                    Violence Detected: 
+                    <span className={analysis.results.violence_detected ? 'text-red-500' : 'text-green-500'}>
+                      {analysis.results.violence_detected ? ' Yes' : ' No'}
+                    </span>
+                  </p>
+                  {analysis.results.confidence && (
+                    <p className="text-xs text-gray-500">
+                      Confidence: {(analysis.results.confidence * 100).toFixed(1)}%
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {analyses.length === 0 && (
+          <div className="text-center text-gray-500 py-8">
+            No videos analyzed yet
+          </div>
+        )}
+      </div>
     </div>
   );
 }
