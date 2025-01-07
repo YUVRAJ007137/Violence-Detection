@@ -1,64 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Upload, AlertTriangle, CheckCircle, Clock, Loader } from 'lucide-react';
-import { format } from 'date-fns';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const ALLOWED_FILE_TYPES = ['video/mp4', 'video/avi'];
 
 interface VideoAnalysis {
   id: string;
   video_url: string;
-  status: 'pending' | 'processing' | 'completed' | 'error';
-  results: {
-    violence_detected?: boolean;
-    confidence?: number;
-  } | null;
-  created_at: string;
+  analysis_result: string | null;
+  status: 'processing' | 'completed' | 'failed';
 }
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB in bytes
-const ALLOWED_FILE_TYPES = ['video/mp4', 'video/avi'];
-
-export function VideoAnalysis() {
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [analyses, setAnalyses] = useState<VideoAnalysis[]>([]);
+export const VideoAnalysis = () => {
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [analyses, setAnalyses] = useState<VideoAnalysis[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   useEffect(() => {
+    // Fetch existing analyses when the component mounts
     fetchAnalyses();
     const subscription = setupRealtimeSubscription();
+
     return () => {
+      // Cleanup the subscription when the component unmounts
       subscription.then(channel => {
         supabase.removeChannel(channel);
       });
     };
   }, []);
 
-  const setupRealtimeSubscription = async () => {
-    const channel = supabase
-      .channel('video_analysis_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'video_analysis'
-      }, fetchAnalyses)
-      .subscribe();
-    
-    return channel;
+  const fetchAnalyses = async () => {
+    const { data, error } = await supabase.from('video_analyses').select('*');
+    if (error) {
+      console.error('Error fetching analyses:', error.message);
+      return;
+    }
+    setAnalyses(data || []);
   };
 
-  const fetchAnalyses = async () => {
-    try {
-      const { data, error: fetchError } = await supabase
-        .from('video_analysis')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (fetchError) throw fetchError;
-      setAnalyses(data || []);
-    } catch (err: any) {
-      setError(`Failed to fetch analyses: ${err.message}`);
-    }
+  const setupRealtimeSubscription = () => {
+    return supabase
+      .from('video_analyses')
+      .on('INSERT', payload => {
+        setAnalyses((prevAnalyses) => [...prevAnalyses, payload.new]);
+      })
+      .on('UPDATE', payload => {
+        setAnalyses((prevAnalyses) => prevAnalyses.map((analysis) =>
+          analysis.id === payload.new.id ? payload.new : analysis
+        ));
+      })
+      .subscribe();
   };
 
   const validateFile = (file: File): string | null => {
@@ -72,183 +64,113 @@ export function VideoAnalysis() {
     return null;
   };
 
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      setError(null);
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const validationError = validateFile(file);
-      if (validationError) {
-        setError(validationError);
-        return;
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files ? event.target.files[0] : null;
+    if (file) {
+      const errorMessage = validateFile(file);
+      if (errorMessage) {
+        setError(errorMessage);
+      } else {
+        setError(null);
+        setVideoFile(file);
       }
-
-      setUploading(true);
-      setUploadProgress(0);
-
-      // Get user session first
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw new Error('Authentication required');
-      if (!session?.user?.id) throw new Error('User not authenticated');
-
-      // Upload file
-      const filePath = `videos/${session.user.id}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('video-analysis')
-        .upload(filePath, file, {
-          onUploadProgress: (progress) => {
-            const percent = (progress.loaded / progress.total) * 100;
-            setUploadProgress(Math.round(percent));
-          },
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl }, error: urlError } = supabase.storage
-        .from('video-analysis')
-        .getPublicUrl(filePath);
-
-      if (urlError) throw urlError;
-
-      // Create database entry
-      const { error: dbError } = await supabase
-        .from('video_analysis')
-        .insert([{
-          user_id: session.user.id,
-          video_url: publicUrl,
-          status: 'pending',
-        }]);
-
-      if (dbError) throw dbError;
-
-      await fetchAnalyses();
-    } catch (err: any) {
-      console.error('Upload error:', err);
-      setError(err.message);
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-      if (event.target) event.target.value = ''; // Reset file input
     }
   };
 
-  const getStatusIcon = (status: VideoAnalysis['status']) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case 'processing':
-        return <Clock className="w-5 h-5 text-blue-500 animate-spin" />;
-      case 'error':
-        return <AlertTriangle className="w-5 h-5 text-red-500" />;
-      default:
-        return <Clock className="w-5 h-5 text-gray-500" />;
+  const uploadVideo = async () => {
+    if (!videoFile) return;
+
+    const fileName = `${Date.now()}_${videoFile.name}`;
+    const { data, error } = await supabase.storage
+      .from('videos')
+      .upload(fileName, videoFile, {
+        cacheControl: '3600',
+        upsert: false,
+        onProgress: (progress) => {
+          setUploadProgress((progress.loaded / progress.total) * 100);
+        }
+      });
+
+    if (error) {
+      console.error('Error uploading video:', error.message);
+      setError('Error uploading video');
+      return;
+    }
+
+    const { publicURL, error: urlError } = supabase.storage
+      .from('videos')
+      .getPublicUrl(fileName);
+      
+    if (urlError) {
+      console.error('Error generating public URL:', urlError.message);
+      setError('Error generating public URL');
+      return;
+    }
+
+    // Insert record into video_analyses table
+    const { error: insertError } = await supabase.from('video_analyses').insert([
+      {
+        video_url: publicURL,
+        status: 'processing',
+        analysis_result: null,
+      }
+    ]);
+
+    if (insertError) {
+      console.error('Error inserting into database:', insertError.message);
+      setError('Error saving video analysis');
     }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <h2 className="text-xl font-bold">Video Analysis</h2>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg border border-gray-200">
-            <label className="block">
-              <span className="sr-only">Choose video file</span>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  {uploading ? (
-                    <div className="space-y-2">
-                      <Loader className="mx-auto h-12 w-12 text-blue-500 animate-spin" />
-                      <div className="relative pt-1">
-                        <div className="flex mb-2 items-center justify-between">
-                          <span className="text-xs font-semibold text-blue-600">
-                            Uploading... {uploadProgress}%
-                          </span>
-                        </div>
-                        <div className="h-2 rounded bg-blue-200">
-                          <div
-                            style={{ width: `${uploadProgress}%` }}
-                            className="h-full rounded bg-blue-500 transition-all duration-300"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex text-sm text-gray-600">
-                        <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
-                          <span>Upload a video</span>
-                          <input
-                            type="file"
-                            className="sr-only"
-                            accept="video/mp4,video/avi"
-                            onChange={handleUpload}
-                            disabled={uploading}
-                          />
-                        </label>
-                      </div>
-                      <p className="text-xs text-gray-500">MP4, AVI up to 100MB</p>
-                    </>
-                  )}
-                </div>
-              </div>
-            </label>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-center mb-6">Video Analysis</h1>
+      
+      <div className="text-center mb-6">
+        <input type="file" accept="video/*" onChange={handleFileChange} />
+        {error && <p className="text-red-500 mt-2">{error}</p>}
+      </div>
+
+      <div className="text-center mb-6">
+        <button
+          className="px-6 py-3 bg-blue-500 text-white rounded"
+          onClick={uploadVideo}
+          disabled={!videoFile || uploadProgress > 0}
+        >
+          Upload Video
+        </button>
+        {uploadProgress > 0 && (
+          <div className="mt-2">
+            <progress value={uploadProgress} max={100} />
+            <p>{Math.round(uploadProgress)}%</p>
           </div>
+        )}
+      </div>
 
-          {error && (
-            <div className="p-4 bg-red-50 rounded-md flex items-start space-x-2">
-              <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0" />
-              <p className="text-sm text-red-500">{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-4">
+      <div className="mb-6">
+        {analyses.length === 0 ? (
+          <p>No videos uploaded yet.</p>
+        ) : (
+          <ul>
             {analyses.map((analysis) => (
-              <div key={analysis.id} className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(analysis.status)}
-                      <span className="font-medium capitalize">{analysis.status}</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Uploaded {format(new Date(analysis.created_at), 'PPp')}
-                    </p>
+              <li key={analysis.id} className="mb-4 p-4 border rounded-md">
+                <h3 className="text-xl font-semibold">Video URL: {analysis.video_url}</h3>
+                {analysis.status === 'processing' && (
+                  <div className="text-center text-gray-500 py-8">Analysis in progress...</div>
+                )}
+                {analysis.status === 'completed' && analysis.analysis_result && (
+                  <div className="text-center text-green-500 py-2">
+                    Violence Detection Result: {analysis.analysis_result}
                   </div>
-                  
-                  {analysis.status === 'completed' && analysis.results && (
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
-                        Violence Detected: 
-                        <span className={analysis.results.violence_detected ? 'text-red-500 ml-1' : 'text-green-500 ml-1'}>
-                          {analysis.results.violence_detected ? 'Yes' : 'No'}
-                        </span>
-                      </p>
-                      {analysis.results.confidence !== undefined && (
-                        <p className="text-xs text-gray-500">
-                          Confidence: {(analysis.results.confidence * 100).toFixed(1)}%
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+                )}
+                {analysis.status === 'failed' && (
+                  <div className="text-center text-red-500 py-2">Analysis failed</div>
+                )}
+              </li>
             ))}
-
-            {analyses.length === 0 && (
-              <div className="text-center text-gray-500 py-8">
-                No videos analyzed yet
-              </div>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </ul>
+        )}
+      </div>
+    </div>
   );
-}
-
-export default VideoAnalysis;
+};
