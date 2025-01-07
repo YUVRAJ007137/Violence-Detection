@@ -23,11 +23,16 @@ export function CameraList() {
 
   const fetchCameras = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error('User not authenticated');
+  
       const { data, error } = await supabase
         .from('cameras')
         .select('*')
+        .eq('user_id', user.id)  // Add this line to filter by user_id
         .order('created_at', { ascending: false });
-
+  
       if (error) throw error;
       setCameras(data || []);
     } catch (error: any) {

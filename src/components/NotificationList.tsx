@@ -5,6 +5,7 @@ import { Bell } from 'lucide-react';
 
 interface Notification {
   id: string;
+  user_id: string;
   camera_id: string;
   notification_text: string;
   timestamp: string;
