@@ -64,7 +64,7 @@ export function NotificationList() {
         `)
         .eq('user_id', user.id)  // Filter notifications by user_id
         .order('timestamp', { ascending: false });
-
+         console.log(user.id);
       if (error) throw error;
       setNotifications(data || []);
     } catch (error: any) {
