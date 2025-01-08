@@ -50,7 +50,10 @@ export function VideoAnalysis() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        setAnalyses([]);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('video_analysis')
