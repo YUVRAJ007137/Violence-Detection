@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Upload, AlertTriangle, CheckCircle, Clock, Loader } from 'lucide-react';
 import { format } from 'date-fns';
+import { VideoResult } from './VideoResult';
 
 interface VideoAnalysis {
   id: string;
@@ -17,6 +18,7 @@ export function VideoAnalysis() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analyses, setAnalyses] = useState<VideoAnalysis[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<VideoAnalysis | null>(null);
 
   useEffect(() => {
     fetchAnalyses();
@@ -50,10 +52,7 @@ export function VideoAnalysis() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
-        setAnalyses([]);
-        return;
-      }
+      if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('video_analysis')
@@ -73,32 +72,16 @@ export function VideoAnalysis() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      // Validate file size (100MB limit)
-      if (file.size > 100 * 1024 * 1024) {
-        throw new Error('File size must be less than 100MB');
-      }
-
-      // Validate file type
-      if (!file.type.startsWith('video/')) {
-        throw new Error('Please upload a video file');
-      }
-
       setError(null);
       setUploading(true);
       setUploadProgress(0);
 
-      // Create a unique file path
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-      // Upload the file
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('video-analysis')
-        .upload(filePath, file, {
-          upsert: false,
+        .upload(`videos/${user.id}/${Date.now()}-${file.name}`, file, {
           onUploadProgress: (progress) => {
             const percent = (progress.loaded / progress.total) * 100;
             setUploadProgress(Math.round(percent));
@@ -107,26 +90,19 @@ export function VideoAnalysis() {
 
       if (uploadError) throw uploadError;
 
-      // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('video-analysis')
         .getPublicUrl(uploadData.path);
 
-      // Create the analysis record
       const { error: dbError } = await supabase
         .from('video_analysis')
-        .insert([{
-          user_id: user.id,
+        .insert([{ 
           video_url: publicUrl,
-          status: 'pending'
+          user_id: user.id
         }]);
 
       if (dbError) throw dbError;
 
-      // Reset the file input
-      event.target.value = '';
-      
-      // Refresh the list
       await fetchAnalyses();
     } catch (err: any) {
       setError(err.message);
@@ -221,7 +197,12 @@ export function VideoAnalysis() {
               <div>
                 <div className="flex items-center space-x-2">
                   {getStatusIcon(analysis.status)}
-                  <span className="font-medium capitalize">{analysis.status}</span>
+                  <button
+                    onClick={() => setSelectedAnalysis(analysis)}
+                    className="font-medium capitalize hover:text-blue-600 transition-colors"
+                  >
+                    {analysis.status}
+                  </button>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   Uploaded {format(new Date(analysis.created_at), 'PPp')}
@@ -253,6 +234,13 @@ export function VideoAnalysis() {
           </div>
         )}
       </div>
+
+      {selectedAnalysis && (
+        <VideoResult 
+          analysis={selectedAnalysis}
+          onClose={() => setSelectedAnalysis(null)}
+        />
+      )}
     </div>
   );
 }
