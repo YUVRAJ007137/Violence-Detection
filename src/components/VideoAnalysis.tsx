@@ -229,7 +229,7 @@ export function VideoAnalysis() {
                   {getStatusIcon(analysis.status)}
                   <span className="font-medium capitalize">{analysis.status}</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1"> 
                   Uploaded {format(new Date(analysis.created_at), 'PPp')}
                 </p>
               </div>
