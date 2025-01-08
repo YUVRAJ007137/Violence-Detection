@@ -68,19 +68,34 @@ export function VideoAnalysis() {
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('User ID:', user.id);
       if (!user) throw new Error('User not authenticated');
+
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Validate file size (100MB limit)
+      if (file.size > 100 * 1024 * 1024) {
+        throw new Error('File size must be less than 100MB');
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('video/')) {
+        throw new Error('Please upload a video file');
+      }
 
       setError(null);
       setUploading(true);
       setUploadProgress(0);
 
-      const file = event.target.files?.[0];
-      if (!file) return;
+      // Create a unique file path
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
+      // Upload the file
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('video-analysis')
-        .upload(`videos/${user.id}/${Date.now()}-${file.name}`, file, {
+        .upload(filePath, file, {
+          upsert: false,
           onUploadProgress: (progress) => {
             const percent = (progress.loaded / progress.total) * 100;
             setUploadProgress(Math.round(percent));
@@ -89,19 +104,26 @@ export function VideoAnalysis() {
 
       if (uploadError) throw uploadError;
 
+      // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('video-analysis')
         .getPublicUrl(uploadData.path);
 
+      // Create the analysis record
       const { error: dbError } = await supabase
         .from('video_analysis')
-        .insert([{ 
+        .insert([{
+          user_id: user.id,
           video_url: publicUrl,
-          user_id: user.id
+          status: 'pending'
         }]);
 
       if (dbError) throw dbError;
 
+      // Reset the file input
+      event.target.value = '';
+      
+      // Refresh the list
       await fetchAnalyses();
     } catch (err: any) {
       setError(err.message);
@@ -111,7 +133,6 @@ export function VideoAnalysis() {
     }
   };
 
-  // Rest of the component remains the same
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -123,7 +144,6 @@ export function VideoAnalysis() {
     }
   };
 
-  // JSX remains the same...
   return (
     <div className="p-4">
       <div className="mb-6">
