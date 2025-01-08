@@ -11,7 +11,7 @@ export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
   const [error, setError] = useState(false);
 
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    setIsFullscreen(!isFullscreen); 
   };
 
   // Use a reliable CORS proxy
