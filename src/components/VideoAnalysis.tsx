@@ -8,7 +8,7 @@ interface VideoAnalysis {
   user_id: string;
   video_url: string;
   status: 'pending' | 'processing' | 'completed';
-  results: any;
+  results: string | null; // Now expecting "Yes", "No", or null
   created_at: string;
 }
 
@@ -20,22 +20,26 @@ export function VideoAnalysis() {
 
   useEffect(() => {
     fetchAnalyses();
-    
+
     const subscribeToChanges = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) return;
 
       const channel = supabase
         .channel('video_analysis_changes')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'video_analysis',
-          filter: `user_id=eq.${user.id}`
-        }, () => {
-          fetchAnalyses();
-        })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'video_analysis',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            fetchAnalyses();
+          }
+        )
         .subscribe();
 
       return () => {
@@ -49,7 +53,7 @@ export function VideoAnalysis() {
   const fetchAnalyses = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         setAnalyses([]);
         return;
@@ -115,17 +119,19 @@ export function VideoAnalysis() {
       // Create the analysis record
       const { error: dbError } = await supabase
         .from('video_analysis')
-        .insert([{
-          user_id: user.id,
-          video_url: publicUrl,
-          status: 'pending'
-        }]);
+        .insert([
+          {
+            user_id: user.id,
+            video_url: publicUrl,
+            status: 'pending',
+          },
+        ]);
 
       if (dbError) throw dbError;
 
       // Reset the file input
       event.target.value = '';
-      
+
       // Refresh the list
       await fetchAnalyses();
     } catch (err: any) {
@@ -151,7 +157,7 @@ export function VideoAnalysis() {
     <div className="p-4">
       <div className="mb-6">
         <h2 className="text-xl font-bold mb-4">Video Analysis</h2>
-        
+
         <div className="bg-white p-4 rounded-lg shadow">
           <label className="block">
             <span className="sr-only">Choose video file</span>
@@ -227,20 +233,21 @@ export function VideoAnalysis() {
                   Uploaded {format(new Date(analysis.created_at), 'PPp')}
                 </p>
               </div>
-              
+
               {analysis.status === 'completed' && analysis.results && (
                 <div className="text-right">
                   <p className="text-sm font-medium">
-                    Violence Detected: 
-                    <span className={analysis.results.violence_detected ? 'text-red-500' : 'text-green-500'}>
-                      {analysis.results.violence_detected ? ' Yes' : ' No'}
+                    Violence Detected:
+                    <span
+                      className={
+                        analysis.results === 'Yes'
+                          ? 'text-red-500'
+                          : 'text-green-500'
+                      }
+                    >
+                      {` ${analysis.results}`}
                     </span>
                   </p>
-                  {analysis.results.confidence && (
-                    <p className="text-xs text-gray-500">
-                      Confidence: {(analysis.results.confidence * 100).toFixed(1)}%
-                    </p>
-                  )}
                 </div>
               )}
             </div>
