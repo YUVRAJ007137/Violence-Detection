@@ -68,7 +68,9 @@ export function CameraList() {
           data.ip_address
         );
       }
-
+      console.log(user.id);
+      console.log(data.id);
+      console.log(data.ip_address);
       setNewCamera({ camera_name: '', ip_address: '' });
       fetchCameras();
     } catch (error: any) {

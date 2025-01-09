@@ -1,11 +1,11 @@
 import axios from 'axios';
 
-const API_URL = 'http://your-flask-api-url'; // Replace with your actual Flask API URL
+const API_URL = 'http://127.0.0.1:5000'; // Replace with your actual Flask API URL
 
 export const api = {
   async registerCamera(userId: string, cameraId: string, cameraUrl: string) {
     try {
-      const response = await axios.post(`${API_URL}`, {
+      const response = await axios.post(`${API_URL}/registerCamera`, {
         user_id: userId,
         camera_id: cameraId,
         camera_url: cameraUrl
@@ -19,7 +19,7 @@ export const api = {
 
   async registerVideo(videoUrl: string) {
     try {
-      const response = await axios.post(`${API_URL}`, {
+      const response = await axios.post(`${API_URL}/registerVideo`, {
         video_url: videoUrl
       });
       return response.data;

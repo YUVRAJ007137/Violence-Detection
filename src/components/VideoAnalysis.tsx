@@ -121,9 +121,10 @@ export function VideoAnalysis() {
           if (publicUrl) {
         await api.registerVideo(
           publicUrl
+          
         );
       }
-
+      console.log(publicUrl);
       
       // Create the analysis record
       const { error: dbError } = await supabase
