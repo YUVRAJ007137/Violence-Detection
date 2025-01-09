@@ -61,16 +61,18 @@ export function CameraList() {
       if (error) throw error;
 
       // Then, register the camera with the Flask API
-      if (data) {
-        await api.registerCamera(
-          user.id,
-          data.id,
-          data.ip_address
-        );
-      }
-      console.log(user.id);
-      console.log(data.id);
-      console.log(data.ip_address);
+      // if (data) {
+      //   await api.registerCamera(
+      //     user.id,
+      //     data.id,
+      //     data.ip_address
+      //   );
+      // }
+      // console.log(user.id);
+      // console.log(data.id);
+      // console.log(data.ip_address);
+
+
       setNewCamera({ camera_name: '', ip_address: '' });
       fetchCameras();
     } catch (error: any) {

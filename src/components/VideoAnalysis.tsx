@@ -118,13 +118,13 @@ export function VideoAnalysis() {
         .getPublicUrl(uploadData.path);
 
       // Register the public url with flask API
-          if (publicUrl) {
-        await api.registerVideo(
-          publicUrl
+      //     if (publicUrl) {
+      //   await api.registerVideo(
+      //     publicUrl
           
-        );
-      }
-      console.log(publicUrl);
+      //   );
+      // }
+      // console.log(publicUrl);
       
       // Create the analysis record
       const { error: dbError } = await supabase
