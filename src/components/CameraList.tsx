@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { Plus } from 'lucide-react';
 import { CameraCard } from './CameraCard';
 
@@ -47,14 +48,27 @@ export function CameraList() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { error } = await supabase
+      // First, insert the camera into Supabase
+      const { data, error } = await supabase
         .from('cameras')
         .insert([{
           ...newCamera,
           user_id: user.id,
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Then, register the camera with the Flask API
+      if (data) {
+        await api.registerCamera(
+          user.id,
+          data.id,
+          data.ip_address
+        );
+      }
+
       setNewCamera({ camera_name: '', ip_address: '' });
       fetchCameras();
     } catch (error: any) {

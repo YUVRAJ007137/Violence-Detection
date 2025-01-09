@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { Upload, AlertTriangle, CheckCircle, Clock, Loader } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -116,6 +117,14 @@ export function VideoAnalysis() {
         .from('video-analysis')
         .getPublicUrl(uploadData.path);
 
+      // Register the public url with flask API
+          if (publicUrl) {
+        await api.registerVideo(
+          publicUrl
+        );
+      }
+
+      
       // Create the analysis record
       const { error: dbError } = await supabase
         .from('video_analysis')
@@ -229,7 +238,7 @@ export function VideoAnalysis() {
                   {getStatusIcon(analysis.status)}
                   <span className="font-medium capitalize">{analysis.status}</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-1"> 
+                <p className="text-sm text-gray-500 mt-1">
                   Uploaded {format(new Date(analysis.created_at), 'PPp')}
                 </p>
               </div>
