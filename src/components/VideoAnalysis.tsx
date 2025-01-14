@@ -9,7 +9,7 @@ interface VideoAnalysis {
   user_id: string;
   video_url: string;
   status: 'pending' | 'processing' | 'completed';
-  results: string | null; // Now expecting "Yes", "No", or null
+  results: string | null;
   created_at: string;
 }
 
@@ -117,19 +117,11 @@ export function VideoAnalysis() {
         .from('video-analysis')
         .getPublicUrl(uploadData.path);
 
-      // Register the public url with flask API
-      try{   
+      // Register the public URL with Flask API
       if (publicUrl) {
-        await api.registerVideo(
-          publicUrl
-          
-        );
+        await api.registerVideo(publicUrl);
       }
-      console.log(publicUrl);
-    }
-    catch(error){
-      console.error('Failed to fetch flask api', error);
-    }
+
       // Create the analysis record
       const { error: dbError } = await supabase
         .from('video_analysis')
@@ -168,14 +160,14 @@ export function VideoAnalysis() {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-6 bg-gray-900 rounded-lg shadow-lg">
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-4">Video Analysis</h2>
+        <h2 className="text-xl font-bold text-white mb-4">Video Analysis</h2>
 
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-gray-800 p-4 rounded-lg shadow-md">
           <label className="block">
             <span className="sr-only">Choose video file</span>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-700 border-dashed rounded-md">
               <div className="space-y-1 text-center">
                 {uploading ? (
                   <div className="space-y-2">
@@ -205,7 +197,7 @@ export function VideoAnalysis() {
                   <>
                     <Upload className="mx-auto h-12 w-12 text-gray-400" />
                     <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                      <label className="relative cursor-pointer bg-gray-800 rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
                         <span>Upload a video</span>
                         <input
                           type="file"
@@ -236,12 +228,12 @@ export function VideoAnalysis() {
 
       <div className="space-y-4">
         {analyses.map((analysis) => (
-          <div key={analysis.id} className="bg-white p-4 rounded-lg shadow">
+          <div key={analysis.id} className="bg-gray-800 p-4 rounded-lg shadow-md">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center space-x-2">
                   {getStatusIcon(analysis.status)}
-                  <span className="font-medium capitalize">{analysis.status}</span>
+                  <span className="font-medium capitalize text-white">{analysis.status}</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   Uploaded {format(new Date(analysis.created_at), 'PPp')}
@@ -250,7 +242,7 @@ export function VideoAnalysis() {
 
               {analysis.status === 'completed' && analysis.results && (
                 <div className="text-right">
-                  <p className="text-sm font-medium">
+                  <p className="text-sm font-medium text-white">
                     Violence Detected:
                     <span
                       className={

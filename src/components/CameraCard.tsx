@@ -21,27 +21,37 @@ export function CameraCard({ camera, onDelete }: CameraCardProps) {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-semibold">{camera.camera_name}</h3>
-          <p className="text-sm text-gray-600">{camera.ip_address}</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Added: {new Date(camera.created_at).toLocaleString()}
-          </p>
+    <div className="glass-card rounded-xl overflow-hidden bg-white/10 backdrop-blur-lg shadow-lg border border-white/20 transition-transform hover:scale-105 hover:shadow-xl">
+      {/* Header Section */}
+      <div className="p-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-semibold text-white">{camera.camera_name}</h3>
+            <p className="text-sm text-white/80">{camera.ip_address}</p>
+            <p className="text-xs text-white/60 mt-1">
+              Added: {new Date(camera.created_at).toLocaleString()}
+            </p>
+          </div>
+          <button
+            onClick={() => onDelete(camera.id)}
+            className="text-white/60 hover:text-red-500 transition-colors"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
         </div>
-        <button
-          onClick={() => onDelete(camera.id)}
-          className="text-red-600 hover:text-red-800"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
       </div>
-      <div 
-        className="mt-4 aspect-video cursor-pointer"
+
+      {/* Camera Stream Section */}
+      <div
+        className="mt-2 aspect-video cursor-pointer relative overflow-hidden bg-gradient-to-r from-blue-600 to-red-600 hover:from-red-600 hover:to-blue-600 transition-all"
         onClick={handleClick}
       >
-        <CameraStream 
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p className="text-white text-center font-medium opacity-80">
+            Loading Stream...
+          </p>
+        </div>
+        <CameraStream
           ipAddress={camera.ip_address}
           cameraName={camera.camera_name}
         />

@@ -64,7 +64,7 @@ export function NotificationList() {
         `)
         .eq('user_id', user.id)  // Filter notifications by user_id
         .order('timestamp', { ascending: false });
-         console.log(user.id);
+
       if (error) throw error;
       setNotifications(data || []);
     } catch (error: any) {
@@ -77,10 +77,10 @@ export function NotificationList() {
   if (loading) return <div className="text-center p-4">Loading notifications...</div>;
 
   return (
-    <div className="p-4">
-      <div className="flex items-center mb-4">
-        <Bell className="w-6 h-6 mr-2" />
-        <h2 className="text-xl font-bold">Notifications</h2>
+    <div className="p-6 bg-gray-900 rounded-lg shadow-lg space-y-6">
+      <div className="flex items-center mb-6">
+        <Bell className="w-6 h-6 text-white mr-3" />
+        <h2 className="text-xl font-semibold text-white">Notifications</h2>
       </div>
 
       {error && (
@@ -89,11 +89,11 @@ export function NotificationList() {
 
       <div className="space-y-4">
         {notifications.map((notification) => (
-          <div key={notification.id} className="bg-white p-4 rounded-lg shadow">
+          <div key={notification.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
             <div className="flex justify-between items-start">
               <div>
-                <p className="font-medium">{notification.notification_text}</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-white">{notification.notification_text}</p>
+                <p className="text-sm text-gray-400">
                   Camera: {notification.cameras?.camera_name}
                 </p>
               </div>
