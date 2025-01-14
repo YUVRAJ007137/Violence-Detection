@@ -118,7 +118,7 @@ export function VideoAnalysis() {
         .getPublicUrl(uploadData.path);
 
       // Register the public url with flask API
-      try{    
+      try{   
       if (publicUrl) {
         await api.registerVideo(
           publicUrl
@@ -127,9 +127,8 @@ export function VideoAnalysis() {
       }
       console.log(publicUrl);
     }
-    catch(error)
-    {
-      console.error('Failed to connect with the flask api', error);
+    catch(error){
+      console.error('Failed to fetch flask api', error);
     }
       // Create the analysis record
       const { error: dbError } = await supabase
