@@ -82,8 +82,23 @@ export function CameraList() {
 
   const deleteCamera = async (id: string) => {
     try {
-      const { error } = await supabase.from('cameras').delete().eq('id', id);
-      if (error) throw error;
+      // Step 1: Delete all notifications associated with the camera
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('camera_id', id);
+  
+      if (notificationError) throw notificationError;
+  
+      // Step 2: Delete the camera
+      const { error: cameraError } = await supabase
+        .from('cameras')
+        .delete()
+        .eq('id', id);
+  
+      if (cameraError) throw cameraError;
+  
+      // Step 3: Refresh the list of cameras
       fetchCameras();
     } catch (error: any) {
       setError(error.message);

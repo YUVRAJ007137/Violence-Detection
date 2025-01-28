@@ -15,7 +15,8 @@ export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
   };
 
   // Use a reliable CORS proxy
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`http://${ipAddress}`)}`;
+ // const proxyUrl = `http://${ipAddress}`;
+  const proxyUrl = ipAddress;
 
   return (
     <div
