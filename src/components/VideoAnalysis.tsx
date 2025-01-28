@@ -159,6 +159,10 @@ export function VideoAnalysis() {
     }
   };
 
+  const handleStatusClick = (videoUrl: string) => {
+    window.open(videoUrl, '_blank'); // Open video in a new tab
+  };
+
   return (
     <div className="p-6 bg-gray-900 rounded-lg shadow-lg">
       <div className="mb-6">
@@ -233,7 +237,12 @@ export function VideoAnalysis() {
               <div>
                 <div className="flex items-center space-x-2">
                   {getStatusIcon(analysis.status)}
-                  <span className="font-medium capitalize text-white">{analysis.status}</span>
+                  <button
+                    onClick={() => handleStatusClick(analysis.video_url)}
+                    className="font-medium capitalize text-white hover:underline"
+                  >
+                    {analysis.status}
+                  </button>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   Uploaded {format(new Date(analysis.created_at), 'PPp')}
