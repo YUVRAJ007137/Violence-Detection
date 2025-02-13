@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Maximize2, Minimize2, AlertCircle, RefreshCcw } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface CameraStreamProps {
   ipAddress: string;
@@ -9,14 +10,57 @@ interface CameraStreamProps {
 export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState(false);
+  const notificationSound = useRef<HTMLAudioElement | null>(null);
+  const [cameraId, setCameraId] = useState<string | null>(null);
+
+  // Fetch camera ID based on IP address
+  useEffect(() => {
+    const fetchCameraId = async () => {
+      const { data, error } = await supabase
+        .from('cameras')
+        .select('id')
+        .eq('ip_address', ipAddress)
+        .single();
+
+      if (data) setCameraId(data.id);
+      if (error) console.error('Error fetching camera ID:', error);
+    };
+
+    fetchCameraId();
+  }, [ipAddress]);
+
+  // Set up notification listener
+  useEffect(() => {
+    notificationSound.current = new Audio('/notification.mp3');
+
+    if (!cameraId) return;
+
+    const channel = supabase
+      .channel(`camera-${cameraId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `camera_id=eq.${cameraId}`,
+        },
+        () => {
+          notificationSound.current?.play().catch((error) => {
+            console.error('Notification sound error:', error);
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [cameraId]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-
-  // Use a reliable CORS proxy
- // const proxyUrl = `http://${ipAddress}`;
-  const proxyUrl = ipAddress;
 
   return (
     <div
@@ -26,6 +70,7 @@ export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
           : 'w-full h-full rounded-lg overflow-hidden shadow'
       }`}
     >
+      {/* Existing camera stream rendering logic */}
       {error ? (
         <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 rounded-lg space-y-4">
           <AlertCircle className="w-12 h-12 text-red-500" />
@@ -49,7 +94,7 @@ export function CameraStream({ ipAddress, cameraName }: CameraStreamProps) {
       ) : (
         <>
           <img
-            src={proxyUrl}
+            src={`http://${ipAddress}`}
             alt={`Stream from ${cameraName}`}
             className={`${
               isFullscreen ? 'w-full h-full object-contain' : 'w-full h-full object-cover'

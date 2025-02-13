@@ -8,6 +8,7 @@ interface Notification {
   id: string;
   notification_text: string;
   timestamp: string;
+  camera_id: string; // Ensure this matches your database schema
 }
 
 interface Camera {
@@ -24,39 +25,55 @@ export function CameraDetails() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Fetch initial camera and notifications data
     fetchCameraAndNotifications();
 
+    // Set up real-time subscription for new notifications
     const channel = supabase
-      .channel(`camera-${id}`)
+      .channel(`camera-${id}`) // Unique channel name for this camera
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `camera_id=eq.${id}`,
+          filter: `camera_id=eq.${id}`, // Filter for notifications specific to this camera
         },
         (payload) => {
+          // Add the new notification to the top of the list
           setNotifications((current) => [payload.new as Notification, ...current]);
         }
       )
       .subscribe();
 
+    // Cleanup function to remove the channel when the component unmounts
     return () => {
       supabase.removeChannel(channel);
     };
   }, [id]);
 
+  // Function to fetch camera details and notifications
   const fetchCameraAndNotifications = async () => {
     try {
-      const [cameraResult, notificationsResult] = await Promise.all([
-        supabase.from('cameras').select('*').eq('id', id).single(),
-        supabase.from('notifications').select('*').eq('camera_id', id).order('timestamp', { ascending: false }),
-      ]);
+      // Fetch camera details
+      const cameraResult = await supabase
+        .from('cameras')
+        .select('*')
+        .eq('id', id)
+        .single();
 
+      // Fetch notifications for this camera, ordered by timestamp (newest first)
+      const notificationsResult = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('camera_id', id)
+        .order('timestamp', { ascending: false });
+
+      // Handle errors
       if (cameraResult.error) throw cameraResult.error;
       if (notificationsResult.error) throw notificationsResult.error;
 
+      // Update state with fetched data
       setCamera(cameraResult.data);
       setNotifications(notificationsResult.data || []);
     } catch (error: any) {
@@ -66,13 +83,19 @@ export function CameraDetails() {
     }
   };
 
+  // Loading state
   if (loading) return <div className="text-center p-4 text-white">Loading...</div>;
+
+  // Error state
   if (error) return <div className="text-red-500 p-4 text-center">{error}</div>;
+
+  // Camera not found state
   if (!camera) return <div className="text-center p-4 text-white">Camera not found</div>;
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-[#141e30] to-[#243b55]">
       <div className="glass rounded-xl p-6 space-y-8 max-w-4xl mx-auto">
+        {/* Camera Name */}
         <h2 className="text-3xl font-bold text-white">{camera.camera_name}</h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
